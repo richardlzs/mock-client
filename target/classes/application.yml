@@ -1,0 +1,4 @@
+server:
+  port: 8087
+
+destination_url: "http://127.0.0.1:8088/image"
