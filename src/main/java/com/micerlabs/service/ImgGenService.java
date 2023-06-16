@@ -7,10 +7,9 @@ import javax.annotation.Resource;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -21,17 +20,45 @@ public class ImgGenService {
     private ImgSendService imgSendService;
 
     @Scheduled(cron = "0/5 * * * * *")
-    public void imageGenerate() throws IOException {
-        // 当前时间戳
-        Date date = new Date();
-        // 生成图片
-        BufferedImage bufferedImage = new BufferedImage(300, 50, BufferedImage.TYPE_INT_RGB);
-        Graphics paint = bufferedImage.getGraphics();
-        paint.setColor(Color.WHITE);
-        paint.fillRect(0, 0, 300, 50);
-        paint.setColor(Color.blue);
-        paint.drawString(getImgContent(date), 5, 20);
-        imgSendService.sengImage(bufferedImageToInputStream(bufferedImage), date.getTime() + ".jpg");
+    public void imageGenerate()  {
+        Path compressedPath=null;
+        try
+        {
+
+
+            // 当前时间戳
+            Date date = new Date();
+            // 生成图片
+            BufferedImage bufferedImage = new BufferedImage(300, 50, BufferedImage.TYPE_INT_RGB);
+            Graphics paint = bufferedImage.getGraphics();
+            paint.setColor(Color.WHITE);
+            paint.fillRect(0, 0, 300, 50);
+            paint.setColor(Color.blue);
+            paint.drawString(getImgContent(date), 5, 20);
+
+            compressedPath=ImgSendService.compressFile(bufferedImageToInputStream(bufferedImage));
+            if(compressedPath==null)
+            {
+                throw new IOException("compressedPath is null");
+            }
+            String hash_sha1=imgSendService.get_hash_SHA1(Files.newInputStream(compressedPath));
+            imgSendService.sengImage(Files.newInputStream(compressedPath), date.getTime() + ".jpg",hash_sha1);
+        }catch (IOException e)
+        {
+            e.printStackTrace();
+        }finally {
+            if(compressedPath!=null)
+            {
+                try {
+                    Files.delete(compressedPath);
+                    System.out.println("已清除本地压缩文件！");
+                }catch (IOException ee)
+                {
+                    ee.printStackTrace();
+                }
+            }
+
+        }
     }
 
     /**

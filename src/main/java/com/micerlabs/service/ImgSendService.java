@@ -14,8 +14,13 @@ import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.InputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.util.zip.GZIPOutputStream;
 
 @Service
 public class ImgSendService {
@@ -23,7 +28,7 @@ public class ImgSendService {
     @Value("${destination_url}")
     private String destinationUrl;
 
-    public void sengImage(InputStream is, String fileName) {
+    public void sengImage(InputStream is, String fileName,String hash) {
         try {
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpPost httpPost = new HttpPost(destinationUrl);
@@ -32,6 +37,8 @@ public class ImgSendService {
             builder.addBinaryBody("file",is, ContentType.MULTIPART_FORM_DATA,fileName);
             HttpEntity entity = builder.build();
             httpPost.setEntity(entity);
+
+            httpPost.setHeader("hash",hash);
             //执行提交
             HttpResponse response = httpClient.execute(httpPost);
             HttpEntity responseEntity = response.getEntity();
@@ -47,5 +54,90 @@ public class ImgSendService {
             e.printStackTrace();
         }
 
+    }
+
+    /**
+     * get_hash
+     * @param inputStream 输入流
+     * @return String:SHA-1(formax:0x) or null
+     */
+    public String get_hash_SHA1(InputStream inputStream)
+    {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-1");
+            DigestInputStream dis = new DigestInputStream(inputStream, md);
+
+            byte[] buffer = new byte[8192]; // 缓冲区大小
+            while (dis.read(buffer) != -1) {
+                // 读取文件内容以更新哈希值
+            }
+            dis.close();
+
+            byte[] hashBytes = md.digest();
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hashBytes) {
+                sb.append(String.format("%02x", b)); // 转换为十六进制表示
+            }
+            String hash = sb.toString();
+
+            System.out.println("SHA-1 Hash value: " + hash);
+            return hash;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    //压缩后写入temp文件防止图片过大（我不知道有没有必要？）
+     public static Path compressFile(InputStream inputStream) throws IOException {
+        Path compressedFilePath = null;
+        FileOutputStream fos = null;
+        GZIPOutputStream gzipOS = null;
+
+        try {
+            // 创建临时文件
+            compressedFilePath = Files.createTempFile("compressed", ".gz");
+
+            fos = new FileOutputStream(compressedFilePath.toFile());
+            gzipOS = new GZIPOutputStream(fos);
+            byte[] buffer = new byte[4096];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                gzipOS.write(buffer, 0, bytesRead);
+            }
+
+            System.out.println("文件压缩成功！");
+
+        }catch (IOException e)
+        {
+            e.printStackTrace();
+            return null;
+        }
+        finally {
+            // 关闭资源
+            if (gzipOS != null) {
+                try {
+                    gzipOS.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (fos != null) {
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            if (inputStream != null) {
+                try {
+                    inputStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return compressedFilePath;
     }
 }
