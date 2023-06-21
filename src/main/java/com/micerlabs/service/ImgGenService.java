@@ -19,7 +19,7 @@ public class ImgGenService {
     @Resource
     private ImgSendService imgSendService;
 
-    @Scheduled(cron = "0/5 * * * * *")
+    @Scheduled(fixedDelay = 5000)
     public void imageGenerate()  {
         Path compressedPath=null;
         try
@@ -51,7 +51,7 @@ public class ImgGenService {
             {
                 try {
                     Files.delete(compressedPath);
-                    System.out.println("已清除本地压缩文件！");
+                   // System.out.println("已清除本地压缩文件！");
                 }catch (IOException ee)
                 {
                     ee.printStackTrace();

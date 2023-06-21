@@ -74,16 +74,27 @@ public class ImgSendService {
             //执行提交
             HttpResponse response = httpClient.execute(httpPost);
             HttpEntity responseEntity = response.getEntity();
+            if(response.getStatusLine().getStatusCode()!=200)
+            {
+                System.err.println(response.getStatusLine().getStatusCode());
+                return;
+            }
             if (responseEntity != null) {
                 String result = EntityUtils.toString(responseEntity, StandardCharsets.UTF_8);
                 JSONObject output = JSON.parseObject(result);
                 System.out.println(output.get("status"));
             }
-            if (is != null) {
-                is.close();
-            }
+
         } catch (Exception e) {
             e.printStackTrace();
+        }finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
     }
@@ -138,7 +149,7 @@ public class ImgSendService {
                 gzipOS.write(buffer, 0, bytesRead);
             }
 
-            System.out.println("文件压缩成功！");
+          //  System.out.println("文件压缩成功！");
 
         }catch (IOException e)
         {
