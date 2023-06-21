@@ -1,4 +1,8 @@
 server:
   port: 8087
 
-destination_url: "http://127.0.0.1:8088/image"
+destination_url: "https://lowavl.osmiumarc.top/api/image"
+login_url: "https://lowavl.osmiumarc.top/doLogin"
+
+lowavl_username: "111"
+lowavl_password: "123456"

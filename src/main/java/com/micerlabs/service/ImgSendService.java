@@ -5,11 +5,13 @@ import com.alibaba.fastjson.JSONObject;
 import com.fasterxml.jackson.databind.util.JSONPObject;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 @Service
@@ -28,9 +32,37 @@ public class ImgSendService {
     @Value("${destination_url}")
     private String destinationUrl;
 
+    @Value("${login_url}")
+    private String loginUrl;
+    @Value("${lowavl_username}")
+    private String username;
+    @Value("${lowavl_password}")
+    private String passwd;
+
+    CloseableHttpClient httpClient = HttpClients.createDefault();
+    boolean loggedIn = false;
+
+    public void login() {
+        try {
+            HttpPost httpPost = new HttpPost(loginUrl);
+            List<BasicNameValuePair> params = new ArrayList<>();
+            params.add(new BasicNameValuePair("uname", username));
+            params.add(new BasicNameValuePair("passwd", passwd));
+            httpPost.setEntity(new UrlEncodedFormEntity(params));
+            HttpResponse response = httpClient.execute(httpPost);
+            HttpEntity responseEntity = response.getEntity();
+            System.out.println(responseEntity);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public void sengImage(InputStream is, String fileName,String hash) {
         try {
-            CloseableHttpClient httpClient = HttpClients.createDefault();
+            if (!loggedIn) {
+                login();
+                loggedIn = true;
+            }
             HttpPost httpPost = new HttpPost(destinationUrl);
             MultipartEntityBuilder builder = MultipartEntityBuilder.create();
             // 绑定文件参数，传入文件流和ContentType
