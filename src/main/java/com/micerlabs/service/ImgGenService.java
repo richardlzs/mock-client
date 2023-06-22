@@ -8,6 +8,7 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
@@ -19,22 +20,25 @@ public class ImgGenService {
     @Resource
     private ImgSendService imgSendService;
 
+
+
     @Scheduled(fixedDelay = 5000)
     public void imageGenerate()  {
         Path compressedPath=null;
         try
         {
-
-
+            BufferedImage bg = ImageIO.read(new URL("https://osmiumarc.top/view"));
             // 当前时间戳
             Date date = new Date();
             // 生成图片
-            BufferedImage bufferedImage = new BufferedImage(300, 50, BufferedImage.TYPE_INT_RGB);
+            BufferedImage bufferedImage = new BufferedImage(640, 420, BufferedImage.TYPE_INT_RGB);
             Graphics paint = bufferedImage.getGraphics();
             paint.setColor(Color.WHITE);
             paint.fillRect(0, 0, 300, 50);
-            paint.setColor(Color.blue);
-            paint.drawString(getImgContent(date), 5, 20);
+            paint.drawImage(bg, 0, 0, null);
+            paint.setFont(paint.getFont().deriveFont(Font.BOLD, 28.0f));
+            paint.setColor(Color.yellow);
+            paint.drawString(getImgContent(date), 14, 35);
 
             compressedPath=ImgSendService.compressFile(bufferedImageToInputStream(bufferedImage));
             if(compressedPath==null)
